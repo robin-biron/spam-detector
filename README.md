@@ -10,7 +10,8 @@ Read the related [French article on Medium](https://medium.com/datascientest/le-
 
 ```text
 spam-detector/
-├── app.py                       # Interactive Streamlit article
+├── app.py                       # Streamlit tabs and interactive article
+├── email_demo.py                # Text predictions and demonstration forms
 ├── project_paths.py             # Shared locations for data and images
 ├── notebooks/
 │   └── spam_detector.ipynb       # Email processing, exploration and models
@@ -39,7 +40,15 @@ The application finds its images and prepared CSV relative to the project, so it
 
 The article, *Building a Spam Detector from Scratch Using Machine Learning*, presents email classification, feature engineering and model comparisons. The original notebook and article credits are retained in their sources.
 
-The hosted app currently presents the article as a single page, including both model pipelines and their results. The example-email and custom-email testing screens described in the Medium article belonged to a separate DataScientest-hosted application; their interface code is not present in the merged repositories.
+The hosted app has three tabs:
+
+- **Spam & ham examples**: analyze fictional English messages and compare predictions with their illustrative labels.
+- **Analyze an email**: submit an English email body for a prediction and an estimated spam probability.
+- **Methodology & results**: read the original article, both model pipelines and their reproducible evaluation results.
+
+The testing tabs reuse Model A's fitted text-only logistic regression and vocabulary, without retraining on submitted text. They do not apply the combined models, which also require engineered numeric features and email metadata. The historical English corpus limits their relevance to modern email; model probabilities are not calibrated security risk scores. Input is limited to 20,000 characters. Submitted text is processed by the Streamlit server and is not saved by the application or sent to an external AI service.
+
+These testing screens are a new implementation; the original interface described in the Medium publication was not included in the merged repositories.
 
 ## Research notebook
 

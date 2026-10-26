@@ -44,6 +44,7 @@ def passthrough(*args, **kwargs):
     return lambda function: function
 sys.modules["streamlit"].cache_data = passthrough
 sys.modules["streamlit"].cache_resource = passthrough
+sys.modules["streamlit"].tabs.return_value = [MagicMock(), MagicMock(), MagicMock()]
 seen = []
 class DatasetReached(Exception):
     pass
