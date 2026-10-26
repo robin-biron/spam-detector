@@ -13,10 +13,11 @@ spam-detector/
 ├── assets/
 │   └── images/                  # One copy of each article illustration
 ├── data/
+│   ├── stopwords/english.txt     # Bundled NLTK English stopwords
 │   ├── processed/spam_ham.csv    # Prepared dataset used by the app
 │   └── raw/                     # Local email corpus, ignored by Git
 ├── tests/                       # Layout, resource and corpus-path checks
-├── requirements.txt             # Original application dependency versions
+├── requirements.txt             # Tested application dependency versions
 └── Procfile                     # Optional Heroku process entry point
 ```
 
@@ -24,11 +25,10 @@ The app and notebook use the same project paths. Images and the prepared CSV are
 
 ## Interactive article
 
-In an environment compatible with the original dependencies:
+Use Python 3.12 and the tested dependency versions:
 
 ```sh
 python -m pip install -r requirements.txt
-python -m nltk.downloader stopwords
 python -m streamlit run app.py
 ```
 
@@ -38,7 +38,7 @@ The article, *Building a Spam Detector from Scratch Using Machine Learning*, pre
 
 ## Research notebook
 
-Open [notebooks/spam_detector.ipynb](notebooks/spam_detector.ipynb) in Jupyter. In addition to the application dependencies, the notebook uses Jupyter, BeautifulSoup4 and wordcloud; use versions compatible with the historical environment.
+Open [notebooks/spam_detector.ipynb](notebooks/spam_detector.ipynb) in Jupyter. The notebook preserves its historical code and saved outputs. Its original dependency versions are recorded in `notebooks/requirements-legacy.txt`; it also uses Jupyter, BeautifulSoup4 and wordcloud. Reproducing the research requires a compatible historical environment, separate from the current app environment.
 
 The original research processes raw emails from the Apache SpamAssassin public corpus. Place your extracted corpus in `data/raw/spam/` and `data/raw/ham/`, or set `SPAM_DETECTOR_RAW_DATA` to an absolute directory containing those two folders before starting Jupyter. Raw emails are not included in this repository.
 
@@ -52,11 +52,15 @@ The structural checks use only the Python standard library:
 python -m unittest discover -s tests -v
 ```
 
-They validate resource resolution from another working directory, notebook configuration, data paths, local documentation links and the absence of duplicate image files. They do not retrain the models or certify the legacy application runtime.
+They validate resource resolution from another working directory, notebook configuration, data paths, local documentation links and the absence of duplicate image files. When the application dependencies are installed, the runtime test also executes both models and checks a cached rerun. Without those dependencies, only the structural tests run.
 
-## Historical deployment and dependencies
+## Deployment and reproducibility
 
-Dependency versions remain the original 2020 versions. This reorganization does not modernize the scientific stack or establish that the former Heroku deployment is still available.
+The app uses a tested Python 3.12 environment with dependency versions pinned in `requirements.txt`. It uses native Streamlit charts, sparse text matrices and cached fitted models to run on a small hosted instance. The train/test split and estimators use a fixed seed. The CSV index is read as an index, not used as a model feature.
+
+The app's English stopwords are bundled from the [NLTK stopwords corpus](https://github.com/nltk/nltk_data/blob/gh-pages/packages/corpora/stopwords.zip), so the deployed app does not download a language corpus at runtime. The displayed live accuracy scores are recalculated from the bundled historical dataset; the original article figures and commentary describe the 2020 experiment and may differ.
+
+For Streamlit Community Cloud, deploy this repository's `master` branch, select `app.py` and Python 3.12. No API key or paid service is required. The former Heroku URL is no longer available.
 
 The root `Procfile` launches `app.py` using Heroku's `PORT`. It replaces the old `setup.sh` that wrote configuration into the user's home directory. Local use needs only the Streamlit command above; no deployment is performed by reorganizing this repository.
 

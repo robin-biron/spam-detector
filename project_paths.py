@@ -6,6 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 IMAGE_DIR = PROJECT_ROOT / "assets" / "images"
 PREPARED_DATA = PROJECT_ROOT / "data" / "processed" / "spam_ham.csv"
+ENGLISH_STOPWORDS = PROJECT_ROOT / "data" / "stopwords" / "english.txt"
 
 
 def raw_corpus_paths():

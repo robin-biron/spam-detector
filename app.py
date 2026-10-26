@@ -5,24 +5,60 @@ Created on Sat Sep 26 13:08:35 2020
 
 @author: spawnersky
 """
-from project_paths import IMAGE_DIR, PREPARED_DATA
+from project_paths import ENGLISH_STOPWORDS, IMAGE_DIR, PREPARED_DATA
+
+import hashlib
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-from scipy.sparse import hstack
 from PIL import Image
-import matplotlib.pyplot as plt
-import seaborn as sns
-from bokeh.palettes import Spectral6
-from bokeh.transform import factor_cmap, dodge
-from bokeh.io import show, output_file
-from bokeh.models import ColumnDataSource, FactorRange, HoverTool
-from bokeh.plotting import figure
-from bokeh.models.widgets import Panel, Tabs
-import bokeh.layouts
-import bokeh.models
-import bokeh.plotting
+
+st.set_page_config(page_title="Spam detector", page_icon="📨", layout="wide")
+
+
+@st.cache_data(show_spinner=False)
+def load_dataset():
+    return pd.read_csv(PREPARED_DATA, index_col=0)
+
+
+def sparse_cache_key(matrix):
+    """Hash sparse values and layout without materializing a dense text matrix."""
+    matrix = matrix.tocsr()
+    digest = hashlib.sha256()
+    for values in (matrix.data, matrix.indices, matrix.indptr):
+        digest.update(values.tobytes())
+    return matrix.shape, str(matrix.dtype), digest.hexdigest()
+
+
+SPARSE_HASHES = {
+    "scipy.sparse._csr.csr_matrix": sparse_cache_key,
+    "scipy.sparse._coo.coo_matrix": sparse_cache_key,
+}
+
+
+@st.cache_resource(show_spinner="Training Model A: logistic regression...", hash_funcs=SPARSE_HASHES)
+def fit_logistic(features, labels):
+    from sklearn.linear_model import LogisticRegression
+
+    return LogisticRegression(
+        max_iter=200, solver="liblinear", l1_ratio=1.0, C=1,
+        class_weight="balanced", random_state=42,
+    ).fit(features, labels)
+
+
+@st.cache_resource(show_spinner="Training Model A: SVM...")
+def fit_svm(features, labels):
+    from sklearn.svm import SVC
+
+    return SVC(gamma="scale", class_weight="balanced", kernel="poly", random_state=42).fit(features, labels)
+
+
+@st.cache_resource(show_spinner="Training Model B: random forest...", hash_funcs=SPARSE_HASHES)
+def fit_forest(features, labels):
+    from sklearn.ensemble import RandomForestClassifier
+
+    return RandomForestClassifier(random_state=42, n_jobs=1).fit(features, labels)
 
 
 st.title('Building a Spam Detector from Scratch Using Machine Learning')
@@ -31,11 +67,11 @@ st.write('Sept 10, 2020 · 20 min read :star:')
 
 
 image = Image.open(IMAGE_DIR / 'hacker.jpeg')
-st.image(image, use_column_width=True)
+st.image(image, width="stretch")
 
 
 # ##### intro #######
-df = pd.read_csv(PREPARED_DATA)
+df = load_dataset()
 
 st.header('Introduction')
 intro = """According to ANSII (French Information Systems Security Agency) :
@@ -61,8 +97,8 @@ We have worked on a dataset of 3000 mails written in English and divided into tw
 Each email contains headers such as sender address, date, MIME version etc.""")
 
 st.write("Our dataset is unbalanced, which is quite remarkable when we pay attention to the following pie chart:")
-# image4 = Image.open(IMAGE_DIR / 'proportion_ham_spam.jpg')
-# st.image(image4, width=500)
+image4 = Image.open(IMAGE_DIR / 'proportion_ham_spam.jpg')
+st.image(image4, width=500)
 st.write("""Indeed hams represent 83.69% of all of our emails against 16.31% for spam
 The header of each email contains a lot of information when it is filled (more than 200 features),
 but when we look at the number of missing values in the headers of our mails, this is what we get:
@@ -76,26 +112,15 @@ non_bin = ['From','Subject','Date','upper_words_subject_nb','symb_subject_nb', '
  	'space_body_ratio','hour','day','weekday','fortnight_(15, 31]','weekday_int_(4, 6]']
 df_bin = df.drop(columns = non_bin)
 
-res = pd.DataFrame(index = [0,1])
-for var in df_bin:
- 	res = res.join(df_bin[var].value_counts(normalize=True))
+# Header fields are binarized: zero represents missing source information.
+missing_ratios = df_bin.eq(0).mean()
+hist, edges = np.histogram(missing_ratios, bins=10, range=(0, 1))
+histogram = pd.DataFrame({
+    "Missing header information": [f"{left:.0%}–{right:.0%}" for left, right in zip(edges[:-1], edges[1:])],
+    "Number of features": hist,
+}).set_index("Missing header information")
+st.bar_chart(histogram)
 
-res.drop(index= 1,inplace=True)
-res = pd.DataFrame(np.array(res).reshape(df_bin.shape[1],1),index=res.columns,columns=["Null_ratio"])
-
-p = figure(title="Histogram of the ratio of missing values in header features",plot_width = 700, plot_height = 400,x_range = (0,1),x_axis_label= "Percentage of missing values", y_axis_label="Number of features")
-
-hist, edges = np.histogram(res, bins = 10)
-hist_df = pd.DataFrame({"Null_ratio": hist,"left": edges[:-1],"right": edges[1:]})
-hist_df["interval"] = ["%s to %s" %(round(left,2),round(right,2)) for left, right in zip(hist_df["left"], hist_df["right"])]
-
-source = ColumnDataSource(hist_df)
-p.quad(bottom = 0, top = "Null_ratio",left = "left", right = "right", source = source, fill_color = 'blue', line_color = "black", fill_alpha = 0.7, hover_fill_alpha = 1.0)
-
-hover = HoverTool(tooltips = [('Interval', '@interval'),('Count', str("@" + "Null_ratio"))])
-p.add_tools(hover)
-
-st.bokeh_chart(p)
 
 
 st.write("""We notice that 199 header features have more than 90% missing values in our dataset.
@@ -111,11 +136,11 @@ st.write(df.head())
 
 st.write("To get an idea of the content of the mails, we display the wordclouds for both types of mail.")
 st.write("Most frequent words in **spams** :")
-# image9 = Image.open(IMAGE_DIR / 'wc_spam.png')
-# st.image(image9, width=300)
+image9 = Image.open(IMAGE_DIR / 'wc_spam.png')
+st.image(image9, width=300)
 st.write("Most frequent words in **hams** :")
-# image10 = Image.open(IMAGE_DIR / 'wc_ham.png')
-# st.image(image10, width=300)
+image10 = Image.open(IMAGE_DIR / 'wc_ham.png')
+st.image(image10, width=300)
  
 
 ############## Machine learning #######
@@ -131,7 +156,7 @@ At the end of this test, the probabilities of belonging to each label are calcul
 new numeric feature. The new dataframe obtained containing the numeric features is standardized
 and a reduction of its dimensions by PCA is done before performing a second classification test by SVM which this time will assign the final predictive labels.""")
 image2 = Image.open(IMAGE_DIR / 'method_va.png')
-st.image(image2, use_column_width=True)
+st.image(image2, width="stretch")
 
 ############## CODES MODEL A ###################
 st.write("The original dataset is separated into a training set containing features (X_train) and labels (y_train) and a test set (X_test and y_test).")
@@ -141,7 +166,7 @@ with st.echo():
     data = df.drop('target', axis=1)
     target = df.target
     X_train, X_test, y_train, y_test = train_test_split(data, target,
-                                                        test_size=0.2)
+                                                        test_size=0.2, random_state=42, stratify=target)
     pd.set_option('mode.chained_assignment', None)
 st.write("The training and test sets are separated into two subsets: a first containing the numeric features (X_train_num / X_test_num and a second set containing the text of the email body X_train_nlp / X_test_nlp).")
 with st.echo():
@@ -153,15 +178,12 @@ st.write("The _CountVectorizer_ function is used to tokenize the set containing 
 with st.echo():
     from sklearn.feature_extraction.text import CountVectorizer
     vectorizer = CountVectorizer()
-    X_train_nlp = vectorizer.fit_transform(X_train_nlp).todense()
-    X_test_nlp = vectorizer.transform(X_test_nlp).todense()
+    X_train_nlp = vectorizer.fit_transform(X_train_nlp)
+    X_test_nlp = vectorizer.transform(X_test_nlp)
 st.write("""First of all we perform a logistic regression classification test. The _class_weight = 'balanced'_ argument improves the performance of the algorithm on an unbalanced dataset.
 The algorithm is trained on the training set using the _fit_ function.""")
 with st.echo():
-    from sklearn.linear_model import LogisticRegression
-    LR = LogisticRegression(max_iter=200, solver='liblinear',
-                            penalty='l1', C=1, class_weight='balanced')
-    LR.fit(X_train_nlp, y_train)
+    LR = fit_logistic(X_train_nlp, y_train)
     
 st.write("A first prediction of the labels is performed on the test set, thus making it possible to calculate a first precision score and to estimate the probabilities of belonging to each label (results visible in the ** Results ** part).")
 with st.echo():
@@ -190,9 +212,7 @@ with st.echo():
     
 st.write("A second classification algorithm, this time _SVM_, is performed on the training set containing the reduced numeric features.")
 with st.echo():
-    from sklearn.svm import SVC
-    svm = SVC(gamma='scale', class_weight='balanced', kernel='poly')
-    svm.fit(X_train_pca_M, y_train)
+    svm = fit_svm(X_train_pca_M, y_train)
 st.write("The predictions of the final labels and the calculation of the final precision score can then be carried out on the test set (results visible in the ** Results ** part).")
 with st.echo():
     y_pred_svm = svm.predict(X_test_pca_M)
@@ -205,8 +225,8 @@ st.write("""** Model B ** allows simultaneous processing of text features and nu
 features through the creation of a sparse matrix after tokenization of text  
 features. A unique Random Forest classification test will be carried out on this 
 sparse matrix, which will allow predictive labels to be assigned. """)
-# image3 = Image.open(IMAGE_DIR / 'method_vb.png')
-# st.image(image3, use_column_width=True)
+image3 = Image.open(IMAGE_DIR / 'method_vb.png')
+st.image(image3, width="stretch")
 
 ############### CODES MODEL B ####################
 
@@ -238,10 +258,9 @@ with st.echo():
 st.write("""The content of the email and its subject must be vectorized to be able to be used in an NLP algorithm.
 We take care to remove the common words from the English language, then we create a vectorizer object for the body of the email and another for the subject.""")
 with st.echo():    
-    from nltk.corpus import stopwords
     from sklearn.feature_extraction.text import TfidfVectorizer
     
-    stopWords = set(stopwords.words('english'))
+    stopWords = ENGLISH_STOPWORDS.read_text(encoding='utf-8').splitlines()
 
     vectorizer_content = TfidfVectorizer(min_df=10, stop_words=stopWords)
     vectorizer_subject = TfidfVectorizer(min_df=10, stop_words=stopWords)
@@ -266,10 +285,7 @@ with st.echo():
 
 st.write("We apply a Random Forest algorithm to address our classification problem (results visible in the ** Results ** section)")
 with st.echo():
-    from sklearn.ensemble import RandomForestClassifier
-    
-    rf = RandomForestClassifier()
-    rf.fit(X_train_nlp, y_train)
+    rf = fit_forest(X_train_nlp, y_train)
     pred = rf.predict(X_test_nlp)
    
     
@@ -277,21 +293,27 @@ with st.echo():
     
     
 st.header('Results')
+st.caption("Live test scores use a reproducible 80/20 split of the bundled historical dataset. They are not a guarantee for modern email.")
+a, b, c = st.columns(3)
+a.metric("Model A · text accuracy", f"{score1:.1%}")
+b.metric("Model A · final accuracy", f"{score2:.1%}")
+c.metric("Model B · final accuracy", f"{rf.score(X_test_nlp, y_test):.1%}")
+st.caption("The figures and commentary below report the original 2020 experiment; the live split above may produce different scores.")
 st.write("The confusion matrix remains one of the best way to assess a classification test, to which we add a calculation of the precision score and the recall score. Indeed the false positive rate is the main stake of spam filtering AI.")
 
 st.subheader('Model A')
 
-# image6 = Image.open(IMAGE_DIR / 'score_va_1.png')
-# st.image(image6, use_column_width=True)
+image6 = Image.open(IMAGE_DIR / 'score_va_1.png')
+st.image(image6, width="stretch")
 st.write("The first model A classification test based only on text analysis already has a high accuracy score (> 97%), however the confusion matrix shows that 7 hams were classified as spam. These errors contribute to lower the F1 score. In the context of an unbalanced dataset, the F1 score is the indicator most representative of the reliability of the model and its ability to avoid false positives.")
-# image7 = Image.open(IMAGE_DIR / 'score_va_2.png')
-# st.image(image7, use_column_width=True)
+image7 = Image.open(IMAGE_DIR / 'score_va_2.png')
+st.image(image7, width="stretch")
 st.write("The second cassification test increases the precision score (> 0.99). The confusion matrix shows that the model failed once by classifying spam as ham. There are no false positives because all of the hams have been successfully processed by the model, which enables the model to get a F1 score of 1.")
 
 st.subheader('Model B')
 
-# image8 = Image.open(IMAGE_DIR / 'score_vb.png')
-# st.image(image8, use_column_width=True)
+image8 = Image.open(IMAGE_DIR / 'score_vb.png')
+st.image(image8, width="stretch")
 st.write("The model B allows to process all types of predictions in a single step thanks to its sparse matrix. It provides excellent accuracy (> 99%) as well as an F1 score of 1 for the processing of false positives.")
 
 ###### FURTHER DISCUSSION #######

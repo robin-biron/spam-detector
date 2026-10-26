@@ -40,6 +40,10 @@ for name in ["streamlit", "pandas", "numpy", "scipy", "scipy.sparse", "PIL",
              "bokeh.palettes", "bokeh.plotting", "bokeh.transform", "bokeh.models",
              "bokeh.models.widgets", "bokeh.layouts"]:
     sys.modules[name] = MagicMock()
+def passthrough(*args, **kwargs):
+    return lambda function: function
+sys.modules["streamlit"].cache_data = passthrough
+sys.modules["streamlit"].cache_resource = passthrough
 seen = []
 class DatasetReached(Exception):
     pass
@@ -48,7 +52,7 @@ def open_image(path):
     assert path.is_absolute() and path.is_file(), path
     seen.append(str(path))
     return MagicMock()
-def read_csv(path):
+def read_csv(path, **kwargs):
     path = Path(path)
     assert path.is_absolute() and path.is_file(), path
     with path.open(newline="") as stream:
