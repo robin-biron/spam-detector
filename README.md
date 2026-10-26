@@ -1,5 +1,7 @@
 # Spam detector
 
+**[Open the live application](https://robin-biron-spam-detector.streamlit.app/)** · Hosted for free on Streamlit Community Cloud.
+
 A machine learning project for classifying spam and legitimate emails, with a research notebook and an interactive Streamlit article.
 
 ## Structure
