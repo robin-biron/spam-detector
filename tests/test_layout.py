@@ -119,26 +119,6 @@ else:
             if not link.startswith(("http://", "https://", "#")):
                 self.assertTrue((ROOT / link.split("#")[0]).exists(), link)
 
-    def test_procfile_uses_the_root_app_and_runtime_port(self):
-        kind, command = (ROOT / "Procfile").read_text().strip().split(":", 1)
-        self.assertEqual(kind, "web")
-        with TemporaryDirectory() as folder:
-            fake = Path(folder) / "streamlit"
-            fake.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
-            fake.chmod(0o700)
-            for port in (None, "9123"):
-                env = {**os.environ, "PATH": folder + os.pathsep + os.environ.get("PATH", "")}
-                env.pop("PORT", None)
-                if port:
-                    env["PORT"] = port
-                result = subprocess.run(
-                    ["/bin/sh", "-c", command], cwd=ROOT, env=env,
-                    capture_output=True, text=True, check=True,
-                )
-                arguments = result.stdout.splitlines()
-                self.assertEqual(arguments[:2], ["run", "app.py"])
-                self.assertIn("--server.port=" + (port or "8501"), arguments)
-
 
 if __name__ == "__main__":
     unittest.main()

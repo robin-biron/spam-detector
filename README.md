@@ -19,8 +19,7 @@ spam-detector/
 │   ├── processed/spam_ham.csv    # Prepared dataset used by the app
 │   └── raw/                     # Local email corpus, ignored by Git
 ├── tests/                       # Layout, resource and corpus-path checks
-├── requirements.txt             # Tested application dependency versions
-└── Procfile                     # Optional Heroku process entry point
+└── requirements.txt             # Tested application dependency versions
 ```
 
 The app and notebook use the same project paths. Images and the prepared CSV are stored once. The raw email corpus and prepared feature table have different purposes and are not duplicate datasets.
@@ -62,10 +61,10 @@ The app uses a tested Python 3.12 environment with dependency versions pinned in
 
 The app's English stopwords are bundled from the [NLTK stopwords corpus](https://github.com/nltk/nltk_data/blob/gh-pages/packages/corpora/stopwords.zip), so the deployed app does not download a language corpus at runtime. The displayed live accuracy scores are recalculated from the bundled historical dataset; the original article figures and commentary describe the 2020 experiment and may differ.
 
-For Streamlit Community Cloud, deploy this repository's `master` branch, select `app.py` and Python 3.12. No API key or paid service is required. The former Heroku URL is no longer available.
+For Streamlit Community Cloud, deploy this repository's `master` branch, select `app.py` and Python 3.12. No API key or paid service is required.
 
-The root `Procfile` launches `app.py` using Heroku's `PORT`. It replaces the old `setup.sh` that wrote configuration into the user's home directory. Local use needs only the Streamlit command above; no deployment is performed by reorganizing this repository.
+Local use needs only the Streamlit command above. Community Cloud automatically deploys updates pushed to `master`.
 
 ## Git history
 
-The original `spam-detector` notebook and `article-spam-detector-heroku` histories remain in this single repository, without squashing or rewriting their commits. The former article repository has been removed. This cleanup moves files and removes the verified duplicate `Spam_img.jpeg`; its identical copy is retained as `assets/images/hacker.jpeg`.
+The original notebook and interactive article histories remain in this single repository, without squashing or rewriting their commits. The former article repository has been removed. This cleanup moves files and removes the verified duplicate `Spam_img.jpeg`; its identical copy is retained as `assets/images/hacker.jpeg`.
