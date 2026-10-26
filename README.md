@@ -4,6 +4,8 @@
 
 A machine learning project for classifying spam and legitimate emails, with a research notebook and an interactive Streamlit article.
 
+Read the related [French article on Medium](https://medium.com/datascientest/le-machine-learning-au-service-de-la-cybers%C3%A9curit%C3%A9-dans-la-d%C3%A9tection-de-spams-dans-les-e-mails-5bb072258057), published by Robin Biron in DataScientest on March 3, 2021.
+
 ## Structure
 
 ```text
@@ -36,6 +38,8 @@ python -m streamlit run app.py
 The application finds its images and prepared CSV relative to the project, so it can also be launched with an absolute path to `app.py` from another directory.
 
 The article, *Building a Spam Detector from Scratch Using Machine Learning*, presents email classification, feature engineering and model comparisons. The original notebook and article credits are retained in their sources.
+
+The hosted app currently presents the article as a single page, including both model pipelines and their results. The example-email and custom-email testing screens described in the Medium article belonged to a separate DataScientest-hosted application; their interface code is not present in the merged repositories.
 
 ## Research notebook
 
