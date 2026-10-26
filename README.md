@@ -31,4 +31,4 @@ The dependency versions are the original 2020 versions and require a compatible 
 
 ## Repository history
 
-The former [article-spam-detector-heroku](https://github.com/robin-biron/article-spam-detector-heroku) repository was imported under `article/` without squashing its commits. Both original Git histories are retained, and the notebook, application, images and dataset are preserved unchanged. `spam-detector` is the combined repository; the original article repository remains available for existing links.
+The former `article-spam-detector-heroku` repository was imported under `article/` without squashing its commits. Both original Git histories are retained, and the notebook, application, images and dataset are preserved unchanged. `spam-detector` is the single repository for both components; use the paths above instead of links to the former article repository.
