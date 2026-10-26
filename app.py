@@ -5,6 +5,8 @@ Created on Sat Sep 26 13:08:35 2020
 
 @author: spawnersky
 """
+from project_paths import IMAGE_DIR, PREPARED_DATA
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -12,9 +14,7 @@ from scipy.sparse import hstack
 from PIL import Image
 import matplotlib.pyplot as plt
 import seaborn as sns
-from bokeh.io import output_file, show
 from bokeh.palettes import Spectral6
-from bokeh.plotting import figure
 from bokeh.transform import factor_cmap, dodge
 from bokeh.io import show, output_file
 from bokeh.models import ColumnDataSource, FactorRange, HoverTool
@@ -30,12 +30,12 @@ st.subheader('Robin Biron, Félix Peyré, Alexis Teskrat ')
 st.write('Sept 10, 2020 · 20 min read :star:')
 
 
-image = Image.open('hacker.jpeg')
+image = Image.open(IMAGE_DIR / 'hacker.jpeg')
 st.image(image, use_column_width=True)
 
 
 # ##### intro #######
-df = pd.read_csv(r'df_spam_ham.csv')
+df = pd.read_csv(PREPARED_DATA)
 
 st.header('Introduction')
 intro = """According to ANSII (French Information Systems Security Agency) :
@@ -61,7 +61,7 @@ We have worked on a dataset of 3000 mails written in English and divided into tw
 Each email contains headers such as sender address, date, MIME version etc.""")
 
 st.write("Our dataset is unbalanced, which is quite remarkable when we pay attention to the following pie chart:")
-# image4 = Image.open('proportion-ham-spam.jpg')
+# image4 = Image.open(IMAGE_DIR / 'proportion_ham_spam.jpg')
 # st.image(image4, width=500)
 st.write("""Indeed hams represent 83.69% of all of our emails against 16.31% for spam
 The header of each email contains a lot of information when it is filled (more than 200 features),
@@ -111,10 +111,10 @@ st.write(df.head())
 
 st.write("To get an idea of the content of the mails, we display the wordclouds for both types of mail.")
 st.write("Most frequent words in **spams** :")
-# image9 = Image.open('wc-spam.png') 
+# image9 = Image.open(IMAGE_DIR / 'wc_spam.png')
 # st.image(image9, width=300)
 st.write("Most frequent words in **hams** :")
-# image10 = Image.open('wc-ham.png') 
+# image10 = Image.open(IMAGE_DIR / 'wc_ham.png')
 # st.image(image10, width=300)
  
 
@@ -130,7 +130,7 @@ The body of the email is tokenized so as to perform a first classification test 
 At the end of this test, the probabilities of belonging to each label are calculated and added as
 new numeric feature. The new dataframe obtained containing the numeric features is standardized
 and a reduction of its dimensions by PCA is done before performing a second classification test by SVM which this time will assign the final predictive labels.""")
-image2 = Image.open('method_VA.png')
+image2 = Image.open(IMAGE_DIR / 'method_va.png')
 st.image(image2, use_column_width=True)
 
 ############## CODES MODEL A ###################
@@ -205,7 +205,7 @@ st.write("""** Model B ** allows simultaneous processing of text features and nu
 features through the creation of a sparse matrix after tokenization of text  
 features. A unique Random Forest classification test will be carried out on this 
 sparse matrix, which will allow predictive labels to be assigned. """)
-# image3 = Image.open('method_VB.png')
+# image3 = Image.open(IMAGE_DIR / 'method_vb.png')
 # st.image(image3, use_column_width=True)
 
 ############### CODES MODEL B ####################
@@ -281,16 +281,16 @@ st.write("The confusion matrix remains one of the best way to assess a classific
 
 st.subheader('Model A')
 
-# image6 = Image.open('score_VA_1.png')
+# image6 = Image.open(IMAGE_DIR / 'score_va_1.png')
 # st.image(image6, use_column_width=True)
 st.write("The first model A classification test based only on text analysis already has a high accuracy score (> 97%), however the confusion matrix shows that 7 hams were classified as spam. These errors contribute to lower the F1 score. In the context of an unbalanced dataset, the F1 score is the indicator most representative of the reliability of the model and its ability to avoid false positives.")
-# image7 = Image.open('score_VA_2.png')
+# image7 = Image.open(IMAGE_DIR / 'score_va_2.png')
 # st.image(image7, use_column_width=True)
 st.write("The second cassification test increases the precision score (> 0.99). The confusion matrix shows that the model failed once by classifying spam as ham. There are no false positives because all of the hams have been successfully processed by the model, which enables the model to get a F1 score of 1.")
 
 st.subheader('Model B')
 
-# image8 = Image.open('score_VB.png')
+# image8 = Image.open(IMAGE_DIR / 'score_vb.png')
 # st.image(image8, use_column_width=True)
 st.write("The model B allows to process all types of predictions in a single step thanks to its sparse matrix. It provides excellent accuracy (> 99%) as well as an F1 score of 1 for the processing of false positives.")
 
